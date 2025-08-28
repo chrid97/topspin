@@ -20,26 +20,6 @@ void test(char *text) {
   DrawText(text, GetScreenWidth() / 2, GetScreenHeight() / 2, 100, RED);
 }
 
-bool AABBCircleCollision(Vector2 rectPos, float rectWidth, float rectHeight,
-                         Vector2 circlePos, float circleRadius) {
-  // Rectangle bounds
-  float rectLeft = rectPos.x;
-  float rectRight = rectPos.x + rectWidth;
-  float rectTop = rectPos.y;
-  float rectBottom = rectPos.y + rectHeight;
-
-  // Closest point on rectangle to circle
-  float closestX = fmaxf(rectLeft, fminf(circlePos.x, rectRight));
-  float closestY = fmaxf(rectTop, fminf(circlePos.y, rectBottom));
-
-  // Vector from circle to closest point
-  float dx = circlePos.x - closestX;
-  float dy = circlePos.y - closestY;
-
-  // If distance squared < radius squared, collision
-  return (dx * dx + dy * dy) < (circleRadius * circleRadius);
-}
-
 int main(void) {
   InitWindow(800, 450, "Topspin");
   SetTargetFPS(60);
@@ -64,6 +44,16 @@ int main(void) {
     float scale = (scale_x < scale_y) ? scale_x : scale_y;
 
     // --- Input --- //
+
+    if (IsKeyDown(KEY_R)) {
+      ball =
+          (Entity){.position = {.x = player.position.x, .y = player.position.y},
+                   // .velocity = {.x = 250, .y = 250},
+                   .velocity = {.x = 0, .y = 0},
+                   .height = 6,
+                   .width = 6};
+    }
+
     Vector2 input = {0, 0};
     if (IsKeyDown(KEY_W)) {
       input.y -= 1;
@@ -81,9 +71,9 @@ int main(void) {
     if (!ball_in_play && IsKeyDown(KEY_SPACE)) {
       ball =
           (Entity){.position = {.x = player.position.x, .y = player.position.y},
-                   .velocity = {.x = 300, .y = 300},
-                   .height = 5,
-                   .width = 5};
+                   .velocity = {.x = 250, .y = 250},
+                   .height = 6,
+                   .width = 6};
       ball_in_play = true;
     }
 
@@ -116,8 +106,31 @@ int main(void) {
     }
 
     if (ball_in_play) {
-      ball.position.y -= ball.velocity.y * dt;
+      Rectangle playerRect = {player.position.x, player.position.y,
+                              player.width, player.height};
+      if (CheckCollisionCircleRec(ball.position, ball.height, playerRect)) {
+        test("IM INISDE");
 
+        ball.velocity.y *= -1;
+        // Reverse ball Y velocity to simulate hit
+        // ball.velocity.y *= -1;
+        // float hitOffset =
+        //     (ball.position.x - (player.position.x + player.width / 2.0f)) /
+        //     (player.width / 2.0f);
+
+        // Bounce ball upward
+        // ball.velocity.y = -ball.velocity.y;
+
+        // Add some horizontal angle based on hit offset
+        // ball.velocity.x = hitOffset * ball.velocity.x * 0.7f;
+
+        // Optional: add horizontal velocity based on player input
+        // ball.velocity.x += input.x * 2; // tweak for feel
+      }
+      // ball.position.y -= ball.velocity.y * dt;
+      // ball.position.x -= ball.velocity.x * dt;
+
+      ball.position.y -= ball.velocity.y * dt;
       if (ball.position.y < 0) {
         ball.velocity.y = -ball.velocity.y;
       }
