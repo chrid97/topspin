@@ -106,38 +106,56 @@ int main(void) {
     }
 
     if (ball_in_play) {
+      ball.position.x += ball.velocity.x * dt;
+      ball.position.y += ball.velocity.y * dt;
       Rectangle playerRect = {player.position.x, player.position.y,
                               player.width, player.height};
       if (CheckCollisionCircleRec(ball.position, ball.height, playerRect)) {
         test("IM INISDE");
+        // write an article about this tomorrow
+        float closest_x_position =
+            fmaxf(player.position.x,
+                  fminf(ball.position.x, player.position.x + player.width));
+        float closest_y_position =
+            fmaxf(player.position.y,
+                  (fmin(ball.position.y, player.position.y + player.height)));
 
+        // review this tomorrow
+        Vector2 normal = {0, -1};
+        float dx = ball.position.x - closest_x_position;
+        float dy = ball.position.y - closest_y_position;
+        float distance = sqrtf(dx * dx + dy * dy);
+        if (distance != 0) {
+          normal.x = dx / distance;
+          normal.y = dy / distance;
+
+          // Push ball out
+          float overlap = ball.height - distance;
+          ball.position.x += normal.x * overlap;
+          ball.position.y += normal.y * overlap;
+        } else {
+          // if distance is 0 that means the circle is inside the rectangle
+          // so what do we do?
+        }
+        float dot = ball.velocity.x * normal.x + ball.velocity.y * normal.y;
+        ball.velocity.x -= 2 * dot * normal.x;
+        ball.velocity.y -= 2 * dot * normal.y;
+      }
+      if (ball.position.x - ball.height < 0 ||
+          ball.position.x + ball.height > VIRTUAL_WIDTH) {
+        ball.velocity.x *= -1;
+      }
+      if (ball.position.y - ball.height < 0 ||
+          ball.position.y + ball.height > VIRTUAL_HEIGHT) {
         ball.velocity.y *= -1;
-        // Reverse ball Y velocity to simulate hit
-        // ball.velocity.y *= -1;
-        // float hitOffset =
-        //     (ball.position.x - (player.position.x + player.width / 2.0f)) /
-        //     (player.width / 2.0f);
-
-        // Bounce ball upward
-        // ball.velocity.y = -ball.velocity.y;
-
-        // Add some horizontal angle based on hit offset
-        // ball.velocity.x = hitOffset * ball.velocity.x * 0.7f;
-
-        // Optional: add horizontal velocity based on player input
-        // ball.velocity.x += input.x * 2; // tweak for feel
       }
-      // ball.position.y -= ball.velocity.y * dt;
-      // ball.position.x -= ball.velocity.x * dt;
-
-      ball.position.y -= ball.velocity.y * dt;
-      if (ball.position.y < 0) {
-        ball.velocity.y = -ball.velocity.y;
-      }
-
-      if (ball.position.y > VIRTUAL_HEIGHT - ball.height) {
-        ball.velocity.y = -ball.velocity.y;
-      }
+      // if (ball.position.y < 0) {
+      //   ball.velocity.y = -ball.velocity.y;
+      // }
+      //
+      // if (ball.position.y > VIRTUAL_HEIGHT - ball.height) {
+      //   ball.velocity.y = -ball.velocity.y;
+      // }
     }
 
     // --- Draw --- //
