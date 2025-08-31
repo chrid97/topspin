@@ -3,17 +3,19 @@
 #include <math.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <stdio.h>
 
 #define PLAYER_SPEED 300.0f
 #define VIRTUAL_WIDTH 800
 #define VIRTUAL_HEIGHT 450
+
+typedef enum { SERVING, BALL_IN_PLAY } PlayerState;
 
 typedef struct {
   Vector2 position;
   Vector2 velocity;
   int height;
   int width;
+  float radius;
 } Entity;
 
 void test(char *text) {
@@ -29,8 +31,8 @@ int main(void) {
       .height = 32,
       .width = 32};
 
-  Entity ball = {0};
-  bool ball_in_play = false;
+  Entity ball = {.radius = 6};
+  PlayerState player_state = SERVING;
 
   while (!WindowShouldClose()) {
     float dt = GetFrameTime();
@@ -43,17 +45,9 @@ int main(void) {
     float scale_y = (float)screen_height / VIRTUAL_HEIGHT;
     float scale = (scale_x < scale_y) ? scale_x : scale_y;
 
-    // --- Input --- //
-
-    if (IsKeyDown(KEY_R)) {
-      ball =
-          (Entity){.position = {.x = player.position.x, .y = player.position.y},
-                   // .velocity = {.x = 250, .y = 250},
-                   .velocity = {.x = 0, .y = 0},
-                   .height = 6,
-                   .width = 6};
-    }
-
+    // --------------- //
+    // ---- Input ---- //
+    // --------------- //
     Vector2 input = {0, 0};
     if (IsKeyDown(KEY_W)) {
       input.y -= 1;
@@ -67,22 +61,31 @@ int main(void) {
     if (IsKeyDown(KEY_D)) {
       input.x += 1;
     }
-
-    if (!ball_in_play && IsKeyDown(KEY_SPACE)) {
-      ball =
-          (Entity){.position = {.x = player.position.x, .y = player.position.y},
-                   .velocity = {.x = 250, .y = 250},
-                   .height = 6,
-                   .width = 6};
-      ball_in_play = true;
-    }
-
     if (IsKeyDown(KEY_SPACE)) {
+      if (SERVING) {
+        player_state = BALL_IN_PLAY;
+        ball.velocity.x;
+        // ball.velocity.x = -player.position;
+        // if im in the bottom left i should serve to the top right and vice
+        // versa
+        // it should depend on my x axis
+      }
     }
 
-    // --- Update --- //
+    // if (!ball_in_play && IsKeyDown(KEY_SPACE)) {
+    //   ball =
+    //       (Entity){.position = {.x = player.position.x, .y =
+    //       player.position.y},
+    //                .height = 6,
+    //                .width = 6};
+    //   ball_in_play = true;
+    // }
 
-    // Normalize diagonal movement
+    // ---------------- //
+    // ---- Update ---- //
+    // ---------------- //
+
+    // Normalize diagonal player movement
     if (input.x != 0 || input.y != 0) {
       float len = sqrt(input.x * input.x + input.y * input.y);
       input.x /= len;
@@ -105,60 +108,53 @@ int main(void) {
       player.position.y = 0;
     }
 
-    if (ball_in_play) {
-      ball.position.x += ball.velocity.x * dt;
-      ball.position.y += ball.velocity.y * dt;
-      Rectangle playerRect = {player.position.x, player.position.y,
-                              player.width, player.height};
-      if (CheckCollisionCircleRec(ball.position, ball.height, playerRect)) {
-        test("IM INISDE");
-        // write an article about this tomorrow
-        float closest_x_position =
-            fmaxf(player.position.x,
-                  fminf(ball.position.x, player.position.x + player.width));
-        float closest_y_position =
-            fmaxf(player.position.y,
-                  (fmin(ball.position.y, player.position.y + player.height)));
-
-        // review this tomorrow
-        Vector2 normal = {0, -1};
-        float dx = ball.position.x - closest_x_position;
-        float dy = ball.position.y - closest_y_position;
-        float distance = sqrtf(dx * dx + dy * dy);
-        if (distance != 0) {
-          normal.x = dx / distance;
-          normal.y = dy / distance;
-
-          // Push ball out
-          float overlap = ball.height - distance;
-          ball.position.x += normal.x * overlap;
-          ball.position.y += normal.y * overlap;
-        } else {
-          // if distance is 0 that means the circle is inside the rectangle
-          // so what do we do?
-        }
-        float dot = ball.velocity.x * normal.x + ball.velocity.y * normal.y;
-        ball.velocity.x -= 2 * dot * normal.x;
-        ball.velocity.y -= 2 * dot * normal.y;
-      }
-      if (ball.position.x - ball.height < 0 ||
-          ball.position.x + ball.height > VIRTUAL_WIDTH) {
-        ball.velocity.x *= -1;
-      }
-      if (ball.position.y - ball.height < 0 ||
-          ball.position.y + ball.height > VIRTUAL_HEIGHT) {
-        ball.velocity.y *= -1;
-      }
-      // if (ball.position.y < 0) {
-      //   ball.velocity.y = -ball.velocity.y;
-      // }
-      //
-      // if (ball.position.y > VIRTUAL_HEIGHT - ball.height) {
-      //   ball.velocity.y = -ball.velocity.y;
-      // }
+    if (player_state == SERVING) {
+      ball.position.x = player.position.x;
+      ball.position.y = player.position.y;
     }
 
-    // --- Draw --- //
+    // if (ball_in_play) {
+    //   ball.position.x += ball.velocity.x * dt;
+    //   ball.position.y += ball.velocity.y * dt;
+    //   Rectangle playerRect = {player.position.x, player.position.y,
+    //                           player.width, player.height};
+    //   if (CheckCollisionCircleRec(ball.position, ball.height, playerRect)) {
+    //     float closest_x_position =
+    //         fmaxf(player.position.x,
+    //               fminf(ball.position.x, player.position.x + player.width));
+    //     float closest_y_position =
+    //         fmaxf(player.position.y,
+    //               (fmin(ball.position.y, player.position.y +
+    //               player.height)));
+    //
+    //     Vector2 normal = {0, -1};
+    //     float dx = ball.position.x - closest_x_position;
+    //     float dy = ball.position.y - closest_y_position;
+    //     float distance = sqrtf(dx * dx + dy * dy);
+    //     if (distance != 0) {
+    //       normal.x = dx / distance;
+    //       normal.y = dy / distance;
+    //
+    //       // Push ball out
+    //       float overlap = ball.height - distance;
+    //       ball.position.x += normal.x * overlap;
+    //       ball.position.y += normal.y * overlap;
+    //     }
+    //   }
+    //
+    //   if (ball.position.x - ball.height < 0 ||
+    //       ball.position.x + ball.height > VIRTUAL_WIDTH) {
+    //     ball.velocity.x *= -1;
+    //   }
+    //   if (ball.position.y - ball.height < 0 ||
+    //       ball.position.y + ball.height > VIRTUAL_HEIGHT) {
+    //     ball.velocity.y *= -1;
+    //   }
+    // }
+
+    // ---------------- //
+    // ----- Draw ----- //
+    // ---------------- //
     BeginDrawing();
     ClearBackground(BLACK);
 
@@ -166,10 +162,7 @@ int main(void) {
                   player.width * scale, player.height * scale, BLUE);
 
     DrawCircle(ball.position.x * scale, ball.position.y * scale,
-               ball.width * scale, WHITE);
-
-    // DrawRectangle(0, (screen_height / 2.0f) * scale, screen_width * scale,
-    //               5 * scale, WHITE);
+               ball.radius * scale, WHITE);
 
     EndDrawing();
   }
